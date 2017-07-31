@@ -18,17 +18,17 @@ class PhpWordRendererSpec extends ObjectBehavior
         };
         return [
             'beDocXDocument' => function ($subject) use ($extractDocument) {
-                    $itsDocument = false !== $extractDocument($subject);
-                    return $itsDocument;
+                    libxml_use_internal_errors(TRUE);
+                    $dom = new \DOMDocument();
+                    $dom->loadXML($extractDocument($subject));
+                    $parseErrors = libxml_get_errors();
+                    return !$parseErrors;
             },
             'contains' => function($subject, $strings) use ($extractDocument) {
                     $docContents = $extractDocument($subject);
-                    preg_match_all(
-                        '/' . implode('|', array_map('preg_quote', (array)$strings)) . '/',
-                        $docContents,
-                        $matches
-                    );
-                    return !array_diff((array)$strings, $matches[0]);
+                    $strings = array_map(function ($s) { preg_quote(htmlentities($s)); }, (array)$strings);
+                    preg_match_all('/' . implode('|', $strings) . '/', $docContents, $matches);
+                    return !array_diff($strings, $matches[0]);
             }
         ];
     }
@@ -42,10 +42,10 @@ class PhpWordRendererSpec extends ObjectBehavior
     {
         $fixtureTemplate = __DIR__ . '/../../fixtures/simple_template.docx';
         $data = [
-            'PLACEHOLDER_1' => 'Replaced placeholder 1',
-            'PLACEHOLDER_2' => 'Replaced placeholder 2',
-            'PLACEHOLDER_3' => 'Replaced placeholder 3',
-            'PLACEHOLDER_4' => 'Replaced placeholder 4',
+            'PLACEHOLDER_1' => 'Replaced </b> placeholder 1',
+            'PLACEHOLDER_2' => 'Replaced @ placeholder 2',
+            'PLACEHOLDER_3' => 'Replaced & placeholder 3',
+            'PLACEHOLDER_4' => 'Replaced % placeholder 4',
         ];
 
         $result = $this->render($fixtureTemplate, $data);

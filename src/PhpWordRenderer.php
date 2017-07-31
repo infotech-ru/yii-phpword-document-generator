@@ -11,7 +11,8 @@
 namespace Infotech\PhpWordDocumentGenerator;
 
 use Infotech\DocumentGenerator\Renderer\RendererInterface;
-use PhpOffice\PhpWord\Template;
+use PhpOffice\PhpWord\TemplateProcessor;
+use PhpOffice\PhpWord\Settings;
 
 class PhpWordRenderer implements RendererInterface
 {
@@ -24,11 +25,19 @@ class PhpWordRenderer implements RendererInterface
      */
     public function render($templatePath, array $data)
     {
-        $doc = new Template($templatePath);
+        $savedEscapingSetting = Settings::isOutputEscapingEnabled();
+        Settings::setOutputEscapingEnabled(true);
+
+        $doc = new TemplateProcessor($templatePath);
         foreach ($data as $placeholder => $value) {
             $doc->setValue($placeholder, $value);
         }
-        return $this->getTemporaryFileContents($doc->save());
+
+        $file = $doc->save();
+
+        Settings::setOutputEscapingEnabled($savedEscapingSetting);
+
+        return $this->getTemporaryFileContents($file);
     }
 
     /**
